@@ -44,15 +44,15 @@ function fetchRen(){
 
 
 //code execution
-function runProcess(){
+function runProcess(f){
 	//dialog({type:'open-file'}).then(filePaths => {
-		const filePaths=[__dirname+'/kalkulace-autoflotily.xlsx'];
+		const filePaths=f||[__dirname+'/kalkulace-autoflotily.xlsx'];
 		console.log(filePaths);
 
-		filePaths.forEach(filePath=>{
+		return Promise.all(filePaths.map(filePath=>{
 			const parsedPath = path.parse(filePath);
 
-			XlsxPopulate.fromFileAsync(filePath).then(wb=>{
+			return XlsxPopulate.fromFileAsync(filePath).then(wb=>{
 				//wb - workbook
 				let vins = [], vin = true;
 				const promises = [];
@@ -103,9 +103,14 @@ function runProcess(){
 			}).catch(err=>{
 				console.log('CHYBA!:');
 				console.log(err.message);
+				throw err;
 			});
-		});
+		}));
 	//});
 }
 
-runProcess();
+//runProcess();
+
+module.exports = {
+	runProcess
+}
