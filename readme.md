@@ -1,3 +1,12 @@
+## instalace
+1. nainstalovat node
+1. nainstalovat zavislosti
+
+
+## spusteni
+1. node index.js
+
+
 veci z registru vzdy prepsany
 
 zamenit NM za disel
