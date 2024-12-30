@@ -1,5 +1,4 @@
 const XlsxPopulate = require('xlsx-populate');
-const dialog = require('node-file-dialog');
 const path = require('path');
 
 
@@ -45,63 +44,68 @@ function fetchRen(){
 
 
 //code execution
-dialog({type:'open-file'}).then(filePaths => {
-	console.log(filePaths);
+function runProcess(){
+	//dialog({type:'open-file'}).then(filePaths => {
+		const filePaths=[__dirname+'/kalkulace-autoflotily.xlsx'];
+		console.log(filePaths);
 
-	filePaths.forEach(filePath=>{
-		const parsedPath = path.parse(filePath);
+		filePaths.forEach(filePath=>{
+			const parsedPath = path.parse(filePath);
 
-		XlsxPopulate.fromFileAsync(filePath).then(wb=>{
-			//wb - workbook
-			let vins = [], vin = true;
-			const promises = [];
-			const sheet = wb.sheet('flotila');
-			for(let i = 0; i<500 && vin; i++){
-				vin = sheet.cell(`C${i+3}`).value();
-				if(!vin)break;
-				vins[i] = vin;
-				promises.push(new Promise(resolve=>{setTimeout(()=>{resolve((()=>{return fetchByVin(vins[i]);})())}, (60000/10)*0*i)}));
-			}
+			XlsxPopulate.fromFileAsync(filePath).then(wb=>{
+				//wb - workbook
+				let vins = [], vin = true;
+				const promises = [];
+				const sheet = wb.sheet('flotila');
+				for(let i = 0; i<500 && vin; i++){
+					vin = sheet.cell(`C${i+3}`).value();
+					if(!vin)break;
+					vins[i] = vin;
+					promises.push(new Promise(resolve=>{setTimeout(()=>{resolve((()=>{return fetchByVin(vins[i]);})())}, (60000/10)*i)}));
+				}
 
-			return Promise.allSettled(promises).then(vehicleDatas=>{
-				console.log("allSettled");
-				vehicleDatas.forEach((prom, i)=>{
-					//console.log(prom);
-					const vehicle = prom.value;
-					console.log(i, prom.status, (vehicle||[]).find(x=>x.name=='TovarniZnacka')?.value);
-					if(prom.status == 'rejected') throw Error(prom.reason);
-					[
-						{name: 'CisloOrv', col:'D'},
-						{name: 'CisloTp', col:'E'},
-						{name: 'TovarniZnacka', col:'F'},
-						{name: 'Typ', col:'H'},
-						{name: 'ObchodniOznaceni', col:'G'},
-						{name: '', col:'I'}, //???
-						{name: 'DatumPrvniRegistrace', col:'J'},
-						{name: 'DatumPrvniRegistraceVCr', col:'K'},
+				return Promise.allSettled(promises).then(vehicleDatas=>{
+					console.log("allSettled");
+					vehicleDatas.forEach((prom, i)=>{
+						//console.log(prom);
+						const vehicle = prom.value;
+						console.log(i, prom.status, (vehicle||[]).find(x=>x.name=='TovarniZnacka')?.value);
+						if(prom.status == 'rejected') throw Error(prom.reason);
+						[
+							{name: 'CisloOrv', col:'D'},
+							{name: 'CisloTp', col:'E'},
+							{name: 'TovarniZnacka', col:'F'},
+							{name: 'Typ', col:'H'},
+							{name: 'ObchodniOznaceni', col:'G'},
+							{name: '', col:'I'}, //???
+							{name: 'DatumPrvniRegistrace', col:'J'},
+							{name: 'DatumPrvniRegistraceVCr', col:'K'},
 
-						{name: 'VozidloDruh', col:'M'},
+							{name: 'VozidloDruh', col:'M'},
 
-						{name: 'MotorMaxVykon', col:'P', fn: x=>{return Number(x.split('/')[0]?.trim())||0}},
-						{name: 'MotorZdvihObjem', col:'Q'},
-						{name: 'Palivo', col:'R', fn: x=>{return x + ({'NM':' / Diesel', 'BA': ' / Benzin'}[x]??'')}},
-						{name: 'HmotnostiPripPov', col:'S', fn: x=>{return Number(x.split('/')[0]?.trim())||0}},
+							{name: 'MotorMaxVykon', col:'P', fn: x=>{return Number(x.split('/')[0]?.trim())||0}},
+							{name: 'MotorZdvihObjem', col:'Q'},
+							{name: 'Palivo', col:'R', fn: x=>{return x + ({'NM':' / Diesel', 'BA': ' / Benzin'}[x]??'')}},
+							{name: 'HmotnostiPripPov', col:'S', fn: x=>{return Number(x.split('/')[0]?.trim())||0}},
 
-						{name: 'VozidloKaroserieMist', col:'U', fn: x=>{return Number(x.split('/')[1]?.trim())||0}},
-						{name: 'VozidloKaroserieMist', col:'V', fn: x=>{return Number(x.split('/')[0]?.trim())||0}},
-					].forEach(att=>{
-						const fn = att.fn ?? (x=>{return x});
-						sheet.cell(`${att.col}${i+3}`).value(fn(vehicle.find(x=>x.name==att.name)?.value)) //Velký TP
+							{name: 'VozidloKaroserieMist', col:'U', fn: x=>{return Number(x.split('/')[1]?.trim())||0}},
+							{name: 'VozidloKaroserieMist', col:'V', fn: x=>{return Number(x.split('/')[0]?.trim())||0}},
+						].forEach(att=>{
+							const fn = att.fn ?? (x=>{return x});
+							sheet.cell(`${att.col}${i+3}`).value(fn(vehicle.find(x=>x.name==att.name)?.value)) //Velký TP
+						});
 					});
-				});
 
-				const outFilePath = `${parsedPath.dir}/${parsedPath.name}-vyplneno${parsedPath.ext}`;
-				console.log(outFilePath);
-				return wb.toFileAsync(outFilePath);
+					const outFilePath = `${parsedPath.dir}/${parsedPath.name}-vyplneno${parsedPath.ext}`;
+					console.log(outFilePath);
+					return wb.toFileAsync(outFilePath);
+				});
+			}).catch(err=>{
+				console.log('CHYBA!:');
+				console.log(err.message);
 			});
-		}).catch(err=>{
-			console.log('CHYBA!:');
-			console.log(err.message);
 		});
-	});
-});
+	//});
+}
+
+runProcess();
