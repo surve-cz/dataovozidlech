@@ -1,0 +1,15 @@
+{
+  "name": "dataovozidlech",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Petr Hána <petr.hana01@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "node-file-dialog": "^1.0.3",
+    "xlsx-populate": "^1.21.0"
+  }
+}
